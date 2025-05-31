@@ -120,7 +120,7 @@ async def create_new_chat(form_data: ChatForm, user=Depends(get_verified_user)):
     except Exception as e:
         log.exception(e)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=ERROR_MESSAGES.DEFAULT()
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_MESSAGES.DEFAULT("An unexpected server error occurred. Please try again later.")
         )
 
 
@@ -148,7 +148,7 @@ async def import_chat(form_data: ChatImportForm, user=Depends(get_verified_user)
     except Exception as e:
         log.exception(e)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=ERROR_MESSAGES.DEFAULT()
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_MESSAGES.DEFAULT("An unexpected server error occurred. Please try again later.")
         )
 
 
@@ -258,7 +258,7 @@ async def get_all_user_tags(user=Depends(get_verified_user)):
     except Exception as e:
         log.exception(e)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=ERROR_MESSAGES.DEFAULT()
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_MESSAGES.DEFAULT("An unexpected server error occurred. Please try again later.")
         )
 
 
@@ -349,7 +349,7 @@ async def get_shared_chat_by_id(share_id: str, user=Depends(get_verified_user)):
 
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.NOT_FOUND
+            status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND
         )
 
 
@@ -414,8 +414,8 @@ async def update_chat_by_id(
         return ChatResponse(**chat.model_dump())
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Chat not found.",
         )
 
 
@@ -516,7 +516,8 @@ async def send_chat_message_event_by_id(
         else:
             return False
         return True
-    except:
+    except Exception as e:
+        log.exception(f"Error in send_chat_message_event_by_id for chat {id}, message {message_id}: {e}")
         return False
 
 
@@ -566,7 +567,7 @@ async def get_pinned_status_by_id(id: str, user=Depends(get_verified_user)):
         return chat.pinned
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT()
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found."
         )
 
 
@@ -583,7 +584,7 @@ async def pin_chat_by_id(id: str, user=Depends(get_verified_user)):
         return chat
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT()
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found."
         )
 
 
@@ -613,7 +614,7 @@ async def clone_chat_by_id(
         return ChatResponse(**chat.model_dump())
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT()
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found."
         )
 
 
@@ -642,7 +643,7 @@ async def clone_shared_chat_by_id(id: str, user=Depends(get_verified_user)):
         return ChatResponse(**chat.model_dump())
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT()
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found."
         )
 
 
@@ -673,7 +674,7 @@ async def archive_chat_by_id(id: str, user=Depends(get_verified_user)):
         return ChatResponse(**chat.model_dump())
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT()
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found."
         )
 
 
@@ -775,7 +776,7 @@ async def get_chat_tags_by_id(id: str, user=Depends(get_verified_user)):
         return Tags.get_tags_by_ids_and_user_id(tags, user.id)
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.NOT_FOUND
+            status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND
         )
 
 
@@ -809,7 +810,7 @@ async def add_tag_by_id_and_tag_name(
         return Tags.get_tags_by_ids_and_user_id(tags, user.id)
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.DEFAULT()
+            status_code=status.HTTP_404_NOT_FOUND, detail="Chat not found."
         )
 
 
@@ -834,7 +835,7 @@ async def delete_tag_by_id_and_tag_name(
         return Tags.get_tags_by_ids_and_user_id(tags, user.id)
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.NOT_FOUND
+            status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND
         )
 
 
@@ -856,5 +857,5 @@ async def delete_all_tags_by_id(id: str, user=Depends(get_verified_user)):
         return True
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.NOT_FOUND
+            status_code=status.HTTP_404_NOT_FOUND, detail=ERROR_MESSAGES.NOT_FOUND
         )

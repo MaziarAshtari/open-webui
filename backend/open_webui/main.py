@@ -435,7 +435,7 @@ from open_webui.utils.redis import get_sentinels_from_env
 
 
 if SAFE_MODE:
-    print("SAFE MODE ENABLED")
+    log.warning("SAFE MODE ENABLED")
     Functions.deactivate_all_functions()
 
 logging.basicConfig(stream=sys.stdout, level=GLOBAL_LOG_LEVEL)
@@ -457,23 +457,9 @@ class SPAStaticFiles(StaticFiles):
             else:
                 raise ex
 
-
-print(
-    rf"""
- ██████╗ ██████╗ ███████╗███╗   ██╗    ██╗    ██╗███████╗██████╗ ██╗   ██╗██╗
-██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██║    ██║██╔════╝██╔══██╗██║   ██║██║
-██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ██║ █╗ ██║█████╗  ██████╔╝██║   ██║██║
-██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██║███╗██║██╔══╝  ██╔══██╗██║   ██║██║
-╚██████╔╝██║     ███████╗██║ ╚████║    ╚███╔███╔╝███████╗██████╔╝╚██████╔╝██║
- ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝     ╚══╝╚══╝ ╚══════╝╚═════╝  ╚═════╝ ╚═╝
-
-
-v{VERSION} - building the best AI user interface.
-{f"Commit: {WEBUI_BUILD_HASH}" if WEBUI_BUILD_HASH != "dev-build" else ""}
-https://github.com/open-webui/open-webui
-"""
-)
-
+log.info(f"v{VERSION} - building the best AI user interface.")
+log.info(f"Commit: {WEBUI_BUILD_HASH}" if WEBUI_BUILD_HASH != "dev-build" else "Dev build")
+log.info("https://github.com/open-webui/open-webui")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -1107,7 +1093,7 @@ app.include_router(utils.router, prefix="/api/v1/utils", tags=["utils"])
 try:
     audit_level = AuditLevel(AUDIT_LOG_LEVEL)
 except ValueError as e:
-    logger.error(f"Invalid audit level: {AUDIT_LOG_LEVEL}. Error: {e}")
+    log.error(f"Invalid audit level: {AUDIT_LOG_LEVEL}. Error: {e}")
     audit_level = AuditLevel.NONE
 
 if audit_level != AuditLevel.NONE:
@@ -1288,9 +1274,10 @@ async def chat_completion(
             request, response, form_data, user, metadata, model, events, tasks
         )
     except Exception as e:
+        log.debug(f"Error processing chat completion: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected server error occurred.",
         )
 
 
@@ -1359,7 +1346,7 @@ async def list_tasks_by_chat_id_endpoint(chat_id: str, user=Depends(get_verified
 
     task_ids = list_task_ids_by_chat_id(chat_id)
 
-    print(f"Task IDs for chat {chat_id}: {task_ids}")
+    log.debug(f"Task IDs for chat {chat_id}: {task_ids}")
     return {"task_ids": task_ids}
 
 

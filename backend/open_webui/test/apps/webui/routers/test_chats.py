@@ -1,7 +1,9 @@
 import uuid
+from unittest.mock import patch
 
 from test.util.abstract_integration_test import AbstractPostgresTest
 from test.util.mock_user import mock_webui_user
+from open_webui.constants import ERROR_MESSAGES
 
 
 class TestChats(AbstractPostgresTest):
@@ -234,3 +236,56 @@ class TestChats(AbstractPostgresTest):
 
         chat = self.chats.get_chat_by_id(chat_id)
         assert chat.share_id is None
+
+    @patch('open_webui.models.chats.Chats.insert_new_chat')
+    def test_create_new_chat_unexpected_error(self, mock_insert_new_chat):
+        mock_insert_new_chat.side_effect = Exception("Simulated unexpected DB error")
+
+        with mock_webui_user(id="test_user_id"):
+            response = self.fast_api_client.post(
+                self.create_url("/new"),
+                json={
+                    "chat": {
+                        "name": "chat_error_test",
+                        "description": "chat_error_test description",
+                        "tags": ["tag_error"],
+                    }
+                },
+            )
+        assert response.status_code == 500
+        assert response.json()["detail"] == ERROR_MESSAGES.DEFAULT("An unexpected server error occurred. Please try again later.")
+
+    def test_get_chat_by_id_not_found(self):
+        non_existent_chat_id = str(uuid.uuid4())
+        with mock_webui_user(id="test_user_id"):
+            response = self.fast_api_client.get(self.create_url(f"/{non_existent_chat_id}"))
+        assert response.status_code == 404
+        assert response.json()["detail"] == ERROR_MESSAGES.NOT_FOUND
+
+    @patch('open_webui.models.chats.Chats.import_chat')
+    def test_import_chat_unexpected_error(self, mock_import_chat):
+        mock_import_chat.side_effect = Exception("Simulated unexpected import error")
+
+        with mock_webui_user(id="test_user_id"):
+            response = self.fast_api_client.post(
+                self.create_url("/import"),
+                json={
+                    "chat": {
+                        "name": "imported_chat_error",
+                        "history": {"messages": []},
+                        "tags": [],
+                    }
+                }
+            )
+        assert response.status_code == 500
+        assert response.json()["detail"] == ERROR_MESSAGES.DEFAULT("An unexpected server error occurred. Please try again later.")
+
+    @patch('open_webui.models.tags.Tags.get_tags_by_user_id')
+    def test_get_all_tags_unexpected_error(self, mock_get_tags):
+        mock_get_tags.side_effect = Exception("Simulated unexpected tags error")
+
+        with mock_webui_user(id="test_user_id"):
+            response = self.fast_api_client.get(self.create_url("/all/tags"))
+
+        assert response.status_code == 500
+        assert response.json()["detail"] == ERROR_MESSAGES.DEFAULT("An unexpected server error occurred. Please try again later.")
